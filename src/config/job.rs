@@ -83,7 +83,12 @@ impl Job {
       if let Some(p) = file_path.parent() {
         std::fs::create_dir_all(p)?;
       }
-      std::fs::rename(&f, &file_path)?;
+      match std::fs::rename(&f, &file_path) {
+        Err(ref e) if cfg!(windows) && e.raw_os_error() == Some(17) => {
+          std::fs::copy(&f, &file_path)?;
+        },
+        _ => {},
+      }
       *f = file_path;
     }
 

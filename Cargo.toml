@@ -1,0 +1,19 @@
+cargo-features = ["edition"]
+
+[package]
+name = "screenshot_organiser"
+version = "0.1.0"
+authors = ["Kyle Clemens <git@kyleclemens.com>"]
+
+edition = "2018"
+
+[dependencies]
+chrono = "0.4"
+regex = "1"
+notify = "4"
+image = "0.19"
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
+serde_regex = "0.3"
+failure = "0.1"

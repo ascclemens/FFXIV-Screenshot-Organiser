@@ -37,7 +37,13 @@ impl Job {
     for f in &mut state.file_paths {
       let i = image::open(&f)?;
 
+      let old_file_name = match f.file_name() {
+        Some(f) => f,
+        None => bail!("missing file name"),
+      };
+
       let old_f = f.clone();
+      *f = state.temp_dir.join(old_file_name);
       f.set_extension(to.extension());
 
       let mut dest = OpenOptions::new()

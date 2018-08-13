@@ -16,7 +16,11 @@ use failure::Error;
 
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
 
-use std::{fs, path::PathBuf, sync::mpsc};
+use rayon::prelude::*;
+
+use tempdir::TempDir;
+
+use std::{fs::{self, DirEntry}, path::PathBuf, sync::mpsc};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -33,18 +37,21 @@ fn main() -> Result<()> {
 
   let (tx, rx) = mpsc::channel();
 
-  for entry in std::fs::read_dir(&screenshots_dir)? {
-    let entry = entry?;
-    if let Err(e) = handle(&config, entry.path()) {
+  let temp_dir = TempDir::new("fso-")?;
+  let temp_path = temp_dir.path().to_owned();
+
+  let existing_files: Vec<DirEntry> = std::fs::read_dir(&screenshots_dir)?.collect::<std::result::Result<_, _>>()?;
+
+  existing_files.into_par_iter().for_each(|entry| {
+    if let Err(e) = handle(&config, temp_path.clone(), entry.path()) {
       eprintln!("{}", e);
     }
-  }
+  });
 
   let mut watcher = notify::watcher(
     tx,
     Duration::milliseconds(config.options.event_delay).to_std().unwrap(),
   )?;
-
 
   watcher.watch(
     screenshots_dir.to_string_lossy().to_string(),
@@ -53,7 +60,7 @@ fn main() -> Result<()> {
 
   loop {
     match rx.recv() {
-      Ok(DebouncedEvent::Create(p)) => if let Err(e) = handle(&config, p) {
+      Ok(DebouncedEvent::Create(p)) => if let Err(e) = handle(&config, temp_path.clone(), p) {
         eprintln!("{}", e);
       },
       Ok(_) => {},
@@ -62,7 +69,7 @@ fn main() -> Result<()> {
   }
 }
 
-fn handle(config: &Config, p: PathBuf) -> Result<()> {
+fn handle(config: &Config, temp_dir: PathBuf, p: PathBuf) -> Result<()> {
   let screenshots_dir = config.options.screenshots_dir.canonicalize()?;
 
   // if the path doesn't exist, ignore
@@ -89,7 +96,7 @@ fn handle(config: &Config, p: PathBuf) -> Result<()> {
   };
 
   // execute the jobs in the pipeline
-  let mut state = State::new(p, time);
+  let mut state = State::new(p, time, temp_dir);
   for job in &config.pipeline {
     job.execute(&config, &mut state)?;
   }

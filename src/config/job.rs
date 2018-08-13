@@ -86,6 +86,7 @@ impl Job {
       match std::fs::rename(&f, &file_path) {
         Err(ref e) if cfg!(windows) && e.raw_os_error() == Some(17) => {
           std::fs::copy(&f, &file_path)?;
+          std::fs::remove_file(&f)?;
         },
         _ => {},
       }

@@ -122,6 +122,9 @@ fn handle(config: &Config, temp_dir: PathBuf, p: PathBuf) -> Result<()> {
     None => return Ok(()),
   };
 
+  println!();
+  println!("Handling `{}`.", file_name);
+
   // execute the jobs in the pipeline
   let mut state = State::new(p, time, temp_dir);
   for job in &config.pipeline {

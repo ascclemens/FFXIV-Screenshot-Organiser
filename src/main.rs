@@ -52,7 +52,8 @@ fn main() -> Result<()> {
 
   println!("Collecting existing files.");
 
-  let existing_files: Vec<DirEntry> = std::fs::read_dir(&screenshots_dir)?.collect::<std::result::Result<_, _>>()?;
+  let mut existing_files: Vec<DirEntry> = std::fs::read_dir(&screenshots_dir)?.collect::<std::result::Result<_, _>>()?;
+  existing_files.retain(|x| x.path().is_file());
 
   println!("Processing {} existing file(s).", existing_files.len());
 

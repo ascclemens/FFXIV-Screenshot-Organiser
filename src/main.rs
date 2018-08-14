@@ -37,7 +37,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 fn main() -> Result<()> {
   println!("Starting FFXIV Screenshot Organiser.");
 
-  let ctrlc_rx = set_ctrlc_handler()?;
+  let ctrlc_rx = set_ctrlc_handler(num_cpus::get() + 1)?;
 
   let config_path = match std::env::args().nth(1) {
     Some(x) => x,
@@ -54,7 +54,7 @@ fn main() -> Result<()> {
 
   println!("Screenshots are located at `{}`.", screenshots_dir.to_string_lossy());
 
-  let mut handles = Vec::with_capacity(num_cpus::get());
+  let mut handles = Vec::with_capacity(num_cpus::get() + 1);
 
   let (tx, rx) = mpsc::channel();
   let (event_tx, event_rx) = crossbeam_channel::unbounded();
@@ -200,12 +200,12 @@ fn parse_screenshot_name(config: &Config, s: &str) -> Option<DateTime<Utc>> {
   Some(dt.with_timezone(&Utc))
 }
 
-fn set_ctrlc_handler() -> Result<Receiver<()>> {
+fn set_ctrlc_handler(num_threads: usize) -> Result<Receiver<()>> {
   let (tx, rx) = crossbeam_channel::unbounded();
 
   ctrlc::set_handler(move || {
     println!("Received interrupt.");
-    for _ in 0..num_cpus::get() {
+    for _ in 0..num_threads {
       tx.send(());
     }
   })?;

@@ -63,21 +63,6 @@ fn main() -> Result<()> {
   let temp_path = temp_dir.path().to_owned();
   println!("Storing temporary files in `{}`.", temp_path.to_string_lossy());
 
-  println!("Collecting existing files.");
-
-  let mut existing_files: Vec<DirEntry> = std::fs::read_dir(&screenshots_dir)?.collect::<std::result::Result<_, _>>()?;
-  existing_files.retain(|x| x.path().is_file());
-
-  println!("Processing {} existing file(s).", existing_files.len());
-
-  existing_files.into_par_iter().for_each(|entry| {
-    if let Err(e) = handle(&config, None, temp_path.clone(), entry.path()) {
-      eprintln!("{}", e);
-    }
-  });
-
-  println!("Done!");
-
   let mut watcher = notify::watcher(
     tx,
     Duration::milliseconds(config.options.event_delay).to_std().unwrap(),
@@ -134,6 +119,21 @@ fn main() -> Result<()> {
     });
     handles.push(handle);
   }
+
+  println!("Collecting existing files.");
+
+  let mut existing_files: Vec<DirEntry> = std::fs::read_dir(&screenshots_dir)?.collect::<std::result::Result<_, _>>()?;
+  existing_files.retain(|x| x.path().is_file());
+
+  println!("Processing {} existing file(s).", existing_files.len());
+
+  existing_files.into_par_iter().for_each(|entry| {
+    if let Err(e) = handle(&config, None, temp_path.clone(), entry.path()) {
+      eprintln!("{}", e);
+    }
+  });
+
+  println!("Done!");
 
   for handle in handles {
     handle.join().ok();

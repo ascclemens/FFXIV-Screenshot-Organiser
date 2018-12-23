@@ -1,5 +1,3 @@
-#![feature(rust_2018_preview, iterator_find_map, use_extern_macros)]
-
 #[macro_use] extern crate crossbeam_channel;
 #[macro_use] extern crate serde_derive;
 
@@ -70,7 +68,7 @@ fn main() -> Result<()> {
 
   watcher.watch(
     screenshots_dir.to_string_lossy().to_string(),
-    RecursiveMode::NonRecursive
+    RecursiveMode::NonRecursive,
   )?;
 
   {
@@ -79,12 +77,12 @@ fn main() -> Result<()> {
       let tick = crossbeam_channel::tick(Duration::milliseconds(50).to_std().unwrap());
       loop {
         select! {
-          recv(tick, _) => match rx.try_recv() {
-              Ok(e) => event_tx.send(e),
+          recv(tick) -> _ => match rx.try_recv() {
+              Ok(e) => { event_tx.send(e).ok(); },
               Err(TryRecvError::Empty) => {},
               Err(TryRecvError::Disconnected) => break,
           },
-          recv(thread_ctrlc_rx, _) => break,
+          recv(thread_ctrlc_rx) -> _ => break,
         }
       }
     }));
@@ -103,14 +101,14 @@ fn main() -> Result<()> {
     let handle = std::thread::spawn(move || {
       loop {
         select! {
-          recv(thread_ctrlc_rx, _) => break,
-          recv(thread_event_rx, e) => {
-            match e {
-              Some(DebouncedEvent::Create(p)) => if let Err(e) = handle(&thread_config, Some(i), temp_path.clone(), p) {
+          recv(thread_ctrlc_rx) -> _ => break,
+          recv(thread_event_rx) -> event => {
+            match event {
+              Ok(DebouncedEvent::Create(p)) => if let Err(e) = handle(&thread_config, Some(i), temp_path.clone(), p) {
                 eprintln!("{}", e);
               },
-              Some(_) => {},
-              None => eprintln!("{:#?}", e),
+              Ok(_) => {},
+              Err(e) => eprintln!("{:#?}", e),
             }
           },
         }
@@ -206,7 +204,7 @@ fn set_ctrlc_handler(num_threads: usize) -> Result<Receiver<()>> {
   ctrlc::set_handler(move || {
     println!("Received interrupt.");
     for _ in 0..num_threads {
-      tx.send(());
+      tx.send(()).ok();
     }
   })?;
 

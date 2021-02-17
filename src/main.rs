@@ -13,8 +13,6 @@ use crossbeam_channel::Receiver;
 
 use chrono::{DateTime, Duration, Local, TimeZone, Utc};
 
-use anyhow::Error;
-
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
 
 use rayon::prelude::*;
@@ -30,7 +28,7 @@ use std::{
   },
 };
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T, E = anyhow::Error> = std::result::Result<T, E>;
 
 fn main() -> Result<()> {
   println!("Starting FFXIV Screenshot Organiser.");

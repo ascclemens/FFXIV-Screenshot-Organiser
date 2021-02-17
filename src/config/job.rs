@@ -56,7 +56,7 @@ impl Job {
 
       match to {
         FileType::WebP { quality } => {
-          let rgba = i.into_rgba();
+          let rgba = i.into_rgba8();
           let flat = rgba.into_flat_samples();
           let stride = flat.layout.width_stride as u32 * flat.layout.width;
           let data = if quality < 0 {

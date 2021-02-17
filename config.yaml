@@ -11,9 +11,9 @@ options:
   # Each regular expression must contain groups for month, day, year,
   # hour, minute, and second.
   match:
-    - '(?P<year>\d{4})-(?P<month>\d{2})-(?<day>\d{2})_(?P<hour>\d{2})-(?P<minute>\d{2})-(?P<second>\d{2})_.*.png'
+    - '(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})_(?P<hour>\d{2})-(?P<minute>\d{2})-(?P<second>\d{2})_.*.png'
     - 'ffxiv_(?P<month>\d{2})(?P<day>\d{2})(?P<year>\d{4})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})(?:_\d{3})?.(?:jpg|png)'
-    - 'ffxiv_dx11 (?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}) (?P<hour>\d{2})-(?P<minute>\d{2})-(?P<second>\d{2}).(?:png|bmp)'
+    - 'ffxiv_dx11 (?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}) (?P<hour>\d{2})-(?P<minute>\d{2})-(?P<second>\d{2})(-\d{3}\s*)?.(?:png|bmp)'
   # How long to delay events before giving them to the program. This
   # usually doesn't need to be changed.
   event_delay: 1000

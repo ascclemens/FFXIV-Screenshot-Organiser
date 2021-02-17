@@ -2,11 +2,14 @@ use crate::{Result, config::Config, state::State};
 
 use chrono::Local;
 
-use failure::bail;
+use anyhow::bail;
 
 use image::{ImageFormat, ImageOutputFormat};
 
-use std::fs::OpenOptions;
+use std::{
+  fs::OpenOptions,
+  io::Write,
+};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -51,7 +54,21 @@ impl Job {
         .create(true)
         .open(&f)?;
 
-      i.write_to(&mut dest, to.as_image_output_format())?;
+      match to {
+        FileType::WebP { quality } => {
+          let rgba = i.into_rgba();
+          let flat = rgba.into_flat_samples();
+          let stride = flat.layout.width_stride as u32 * flat.layout.width;
+          let data = if quality < 0 {
+            libwebp::WebPEncodeLosslessRGBA(&flat.samples, flat.layout.width, flat.layout.height, stride)?
+          } else {
+            let quality = std::cmp::min(100, quality);
+            libwebp::WebPEncodeRGBA(&flat.samples, flat.layout.width, flat.layout.height, stride, f32::from(quality))?
+          };
+          dest.write_all(&data)?;
+        },
+        _ => i.write_to(&mut dest, to.as_image_output_format())?,
+      }
 
       if keep {
         add = Some(old_f);
@@ -83,13 +100,7 @@ impl Job {
       if let Some(p) = file_path.parent() {
         std::fs::create_dir_all(p)?;
       }
-      match std::fs::rename(&f, &file_path) {
-        Err(ref e) if cfg!(windows) && e.raw_os_error() == Some(17) => {
-          std::fs::copy(&f, &file_path)?;
-          std::fs::remove_file(&f)?;
-        },
-        _ => {},
-      }
+      std::fs::copy(&f, &file_path)?;
       *f = file_path;
     }
 
@@ -108,6 +119,10 @@ pub enum FileType {
   Gif,
   Bmp,
   Ico,
+  WebP {
+    // less than 0 for lossless
+    quality: i8,
+  },
 }
 
 impl FileType {
@@ -118,22 +133,24 @@ impl FileType {
       FileType::Gif => "gif",
       FileType::Bmp => "bmp",
       FileType::Ico => "ico",
+      FileType::WebP { .. } => "webp",
     }
   }
 
   fn as_image_format(self) -> ImageFormat {
     match self {
-      FileType::Png => ImageFormat::PNG,
-      FileType::Jpg { .. } => ImageFormat::JPEG,
-      FileType::Gif => ImageFormat::GIF,
-      FileType::Bmp => ImageFormat::BMP,
-      FileType::Ico => ImageFormat::ICO,
+      FileType::Png => ImageFormat::Png,
+      FileType::Jpg { .. } => ImageFormat::Jpeg,
+      FileType::Gif => ImageFormat::Gif,
+      FileType::Bmp => ImageFormat::Bmp,
+      FileType::Ico => ImageFormat::Ico,
+      FileType::WebP { .. } => ImageFormat::WebP,
     }
   }
 
   fn as_image_output_format(self) -> ImageOutputFormat {
     match self {
-      FileType::Jpg { quality } => ImageOutputFormat::JPEG(quality),
+      FileType::Jpg { quality } => ImageOutputFormat::Jpeg(quality),
       _ => self.as_image_format().into(),
     }
   }

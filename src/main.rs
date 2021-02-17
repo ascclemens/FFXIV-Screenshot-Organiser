@@ -13,7 +13,7 @@ use crossbeam_channel::Receiver;
 
 use chrono::{DateTime, Duration, Local, TimeZone, Utc};
 
-use failure::Error;
+use anyhow::Error;
 
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
 
@@ -39,12 +39,12 @@ fn main() -> Result<()> {
 
   let config_path = match std::env::args().nth(1) {
     Some(x) => x,
-    None => "config.json".into(),
+    None => "config.yaml".into(),
   };
   println!("Attempting to read config from `{}`.", config_path);
 
   let f = fs::File::open(config_path)?;
-  let config: Config = serde_json::from_reader(f)?;
+  let config: Config = serde_yaml::from_reader(f)?;
 
   println!("Config successfully read.");
 

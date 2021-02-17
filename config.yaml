@@ -1,0 +1,52 @@
+# You should set FFXIV/ReShade to output PNG files.
+
+options:
+  # This is the directory that your screenshots are stored in.
+  screenshots_dir: './screenshots'
+  # File names must match a regular expression in this list in order
+  # to be processed.
+  #
+  # The two defaults are FFXIV's format and ReShade's format.
+  #
+  # Each regular expression must contain groups for month, day, year,
+  # hour, minute, and second.
+  match:
+    - '(?P<year>\d{4})-(?P<month>\d{2})-(?<day>\d{2})_(?P<hour>\d{2})-(?P<minute>\d{2})-(?P<second>\d{2})_.*.png'
+    - 'ffxiv_(?P<month>\d{2})(?P<day>\d{2})(?P<year>\d{4})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})(?:_\d{3})?.(?:jpg|png)'
+    - 'ffxiv_dx11 (?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}) (?P<hour>\d{2})-(?P<minute>\d{2})-(?P<second>\d{2}).(?:png|bmp)'
+  # How long to delay events before giving them to the program. This
+  # usually doesn't need to be changed.
+  event_delay: 1000
+
+# A list of jobs to run on the files.
+#
+# The two types are convert and move.
+pipeline:
+  # Convert screenshots to lossless webp.
+  - job: convert
+    options:
+      to:
+        # The format to convert the screenshot to.
+        #
+        # Supported options: png, jpg*, gif, bmp, ico, webp*
+        # Options marked with * require a quality to be specified.
+        format: webp
+        # The quality of the output. This is only necessary for jpg and webp.
+        #
+        # For jpg, the number can be between 0 and 100. Smaller
+        # numbers are lower quality but lower file size.
+        #
+        # For webp, the number can be -1 to indicate lossless
+        # encoding. It can also be between 0 and 100, with lower
+        # numbers having lower quality but lower file size.
+        quality: -1
+      # Whether to keep the original file. If this is false, the
+      # original will be deleted.
+      keep_original: false
+  - job: move
+    options:
+      # The path to move the file to without its extension. You can
+      # specify directories to sort files into directories.
+      to: '%Y/%m/%d/ffxiv.%Y-%m-%d.%H-%M-%S'
+      # Whether to use your local time zone or UTC.
+      local: true
